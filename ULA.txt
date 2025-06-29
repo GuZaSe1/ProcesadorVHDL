@@ -1,0 +1,72 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
+
+entity ULA is
+	port(
+    	i_A 		: in  std_logic_vector(31 downto 0);
+        i_B 		: in  std_logic_vector(31 downto 0);
+        i_ALUOP     : in  std_logic_vector(1 downto 0);
+        i_F3 		: in  std_logic_vector(2 downto 0);
+        i_INST30	: in  std_logic;
+        o_ZERO		: out std_logic;
+        o_ULA 		: out std_logic_vector(31 downto 0)
+    );
+end ULA;
+
+architecture a1 of ULA is
+    signal w_ULA_RESULT : std_logic_vector(31 downto 0);
+begin
+	process(i_A, i_B, i_F3, i_INST30, i_ALUOP)
+    begin
+        -- Lógica principal da ULA
+        case i_F3 is
+            -- ADD / SUB
+            when "000" => 
+                if (i_INST30 = '0' and i_ALUOP = "10") or i_ALUOP = "00" then
+                    w_ULA_RESULT <= std_logic_vector(signed(i_A) + signed(i_B)); -- ADD ou ADDI
+                else -- SUB
+                    w_ULA_RESULT <= std_logic_vector(signed(i_A) - signed(i_B));
+                end if;
+            -- SLL
+            when "001" =>
+                w_ULA_RESULT <= std_logic_vector(shift_left(unsigned(i_A), to_integer(unsigned(i_B(4 downto 0)))));
+            -- SLT
+            when "010" =>
+                if signed(i_A) < signed(i_B) then
+                    w_ULA_RESULT <= X"00000001";
+                else
+                    w_ULA_RESULT <= X"00000000";
+                end if;
+            -- SLTU
+            when "011" =>
+                if unsigned(i_A) < unsigned(i_B) then
+                    w_ULA_RESULT <= X"00000001";
+                else
+                    w_ULA_RESULT <= X"00000000";
+                end if;
+            -- XOR
+            when "100" =>
+                w_ULA_RESULT <= i_A xor i_B;
+            -- SRL / SRA
+            when "101" =>
+                if (i_INST30 = '0') then
+                    w_ULA_RESULT <= std_logic_vector(shift_right(unsigned(i_A), to_integer(unsigned(i_B(4 downto 0))))); -- SRL
+                else
+                    w_ULA_RESULT <= std_logic_vector(shift_right(signed(i_A), to_integer(unsigned(i_B(4 downto 0))))); -- SRA
+                end if;
+            -- OR
+            when "110" =>
+                w_ULA_RESULT <= i_A or i_B;
+            -- AND
+            when "111" =>
+                w_ULA_RESULT <= i_A and i_B;
+            -- Default
+            when others =>
+                w_ULA_RESULT <= (others => 'X');
+        end case;
+    end process;
+
+    o_ULA  <= w_ULA_RESULT;
+    o_ZERO <= '1' when w_ULA_RESULT = (w_ULA_RESULT'range => '0') else '0';
+end a1;

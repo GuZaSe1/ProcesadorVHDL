@@ -1,0 +1,35 @@
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity gerador_imediato is
+    port (
+        i_INST	: in  std_logic_vector(31 downto 0);
+        o_IMM   : out std_logic_vector(31 downto 0)
+    );
+end entity gerador_imediato;
+
+architecture arch_gerador_imediato of gerador_imediato is
+begin
+    process(i_INST)
+    begin
+        case i_INST(6 downto 0) is
+            -- Tipo I: Load, JALR, Aritméticas I
+            when "0000011" | "1100111" | "0010011" =>
+                o_IMM <= (31 downto 11 => i_INST(31)) & i_INST(30 downto 20);
+            -- Tipo S: Store
+            when "0100011" =>
+                o_IMM <= (31 downto 11 => i_INST(31)) & i_INST(30 downto 25) & i_INST(11 downto 7);
+            -- Tipo B: Branch
+            when "1100011" =>
+                o_IMM <= (31 downto 12 => i_INST(31)) & i_INST(7) & i_INST(30 downto 25) & i_INST(11 downto 8) & '0';
+            -- Tipo J: JAL
+            when "1101111" =>
+                o_IMM <= (31 downto 20 => i_INST(31)) & i_INST(19 downto 12) & i_INST(20) & i_INST(30 downto 21) & '0';
+            -- Tipo U: LUI, AUIPC
+            when "0110111" | "0010111" =>
+                o_IMM <= i_INST(31 downto 12) & x"000";
+            when others =>
+                o_IMM <= (others => '0');
+        end case;
+    end process;
+end architecture arch_gerador_imediato;

@@ -1,0 +1,59 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity controle is
+    Port ( 
+        i_OPCODE    : in  STD_LOGIC_VECTOR (6 downto 0);
+        o_ALU_SRC   : out STD_LOGIC;
+        o_MEM2REG   : out STD_LOGIC;
+        o_REG_WRITE : out STD_LOGIC;
+        o_MEM_READ  : out STD_LOGIC;
+        o_MEM_WRITE : out STD_LOGIC;
+        o_BRANCH    : out STD_LOGIC;
+        o_ALUOP     : out STD_LOGIC_VECTOR (1 downto 0)
+    );
+end controle;
+
+architecture Behavioral of controle is
+    -- Constantes de opcodes para legibilidade
+    constant OPCODE_R_TYPE  : std_logic_vector(6 downto 0) := "0110011";
+    constant OPCODE_I_TYPE  : std_logic_vector(6 downto 0) := "0010011";
+    constant OPCODE_LOAD    : std_logic_vector(6 downto 0) := "0000011";
+    constant OPCODE_STORE   : std_logic_vector(6 downto 0) := "0100011";
+    constant OPCODE_BRANCH  : std_logic_vector(6 downto 0) := "1100011";
+    constant OPCODE_JALR    : std_logic_vector(6 downto 0) := "1100111";
+    constant OPCODE_JAL     : std_logic_vector(6 downto 0) := "1101111";
+
+begin
+    process(i_OPCODE)
+    begin
+        -- Valores padrão para evitar latches
+        o_ALU_SRC <= '0'; o_MEM2REG <= '0'; o_REG_WRITE <= '0'; o_MEM_READ <= '0';
+        o_MEM_WRITE <= '0'; o_BRANCH <= '0'; o_ALUOP <= "00";
+
+        case i_OPCODE is
+            when OPCODE_R_TYPE =>  -- Tipo-R (add, sub, etc.)
+                o_REG_WRITE <= '1'; o_ALU_SRC <= '0'; o_ALUOP <= "10";
+
+            when OPCODE_I_TYPE =>  -- Tipo-I Aritmético (addi, etc.)
+                o_REG_WRITE <= '1'; o_ALU_SRC <= '1'; o_ALUOP <= "00";
+
+            when OPCODE_LOAD =>    -- Load Word (lw)
+                o_REG_WRITE <= '1'; o_MEM_READ <= '1'; o_ALU_SRC <= '1'; o_MEM2REG <= '1'; o_ALUOP <= "00";
+
+            when OPCODE_STORE =>   -- Store Word (sw)
+                o_MEM_WRITE <= '1'; o_ALU_SRC <= '1'; o_ALUOP <= "00";
+
+            when OPCODE_BRANCH =>  -- Branch (beq, etc.)
+                o_BRANCH <= '1'; o_ALU_SRC <= '0'; o_ALUOP <= "01";
+
+            when OPCODE_JALR =>    -- Jump and Link Register
+                 o_REG_WRITE <= '1'; o_ALU_SRC <= '1';
+
+            when OPCODE_JAL =>     -- Jump and Link
+                 o_REG_WRITE <= '1';
+
+            when others => null;
+        end case;
+    end process;
+end Behavioral;
